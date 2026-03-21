@@ -146,7 +146,7 @@ impl RouteGuide for RouteGuideService {
 
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn std::error::Error>> {
-    let addr = "[::1]:10000".parse().unwrap();
+    let addr = "0.0.0.0:10000".parse().unwrap();
 
     println!("RouteGuideServer listening on: {addr}");
 
