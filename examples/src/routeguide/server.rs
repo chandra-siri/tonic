@@ -9,7 +9,7 @@ use tonic::transport::Server;
 use tonic::{Request, Response, Status};
 
 use routeguide::route_guide_server::{RouteGuide, RouteGuideServer};
-use routeguide::{Feature, Point, Rectangle, RouteNote, RouteSummary};
+use routeguide::{Feature, Point, Rectangle, RouteNote, RouteSummary, BytesContainer};
 
 pub mod routeguide {
     tonic::include_proto!("routeguide");
@@ -36,7 +36,7 @@ impl RouteGuide for RouteGuideService {
         Ok(Response::new(Feature::default()))
     }
 
-    type ListFeaturesStream = ReceiverStream<Result<Feature, Status>>;
+    type ListFeaturesStream = ReceiverStream<Result<BytesContainer, Status>>;
 
     async fn list_features(
         &self,
@@ -44,14 +44,27 @@ impl RouteGuide for RouteGuideService {
     ) -> Result<Response<Self::ListFeaturesStream>, Status> {
         println!("ListFeatures = {:?}", request);
 
-        let (tx, rx) = mpsc::channel(4);
-        let features = self.features.clone();
+        let (tx, rx) = mpsc::channel(10240);
+        let _features = self.features.clone(); // Keep if we need it later, but not used
 
         tokio::spawn(async move {
-            for feature in &features[..] {
-                if in_range(feature.location.as_ref().unwrap(), request.get_ref()) {
-                    println!("  => send {feature:?}");
-                    tx.send(Ok(feature.clone())).await.unwrap();
+            let target_bytes = 10_u64 * 1024 * 1024 * 1024; // ~10 GiB
+            let mut sent_bytes = 0_u64;
+
+            let chunk_size = 2 * 1024 * 1024; // 2 MiB
+            let data_raw = vec![0u8; chunk_size];
+            let container = BytesContainer { data: data_raw };
+
+            'outer: while sent_bytes < target_bytes {
+                let size = container.data.len() as u64;
+                
+                if tx.send(Ok(container.clone())).await.is_err() {
+                    break 'outer;
+                }
+                
+                sent_bytes += size;
+                if sent_bytes >= target_bytes {
+                    break 'outer;
                 }
             }
 

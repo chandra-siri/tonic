@@ -31,9 +31,27 @@ async fn print_features(client: &mut RouteGuideClient<Channel>) -> Result<(), Bo
         .await?
         .into_inner();
 
-    while let Some(feature) = stream.message().await? {
-        println!("FEATURE = {feature:?}");
+    let start = std::time::Instant::now();
+    let mut received_bytes = 0u64;
+    let duration = Duration::from_secs(30);
+    let mut count = 0;
+
+    println!("Receiving data from server for around 30 seconds...");
+
+    while let Some(container) = stream.message().await? {
+        received_bytes += container.data.len() as u64;
+        
+        if start.elapsed() >= duration {
+            break;
+        }
     }
+
+    let elapsed = start.elapsed().as_secs_f64();
+    let mib = received_bytes as f64 / (1024.0 * 1024.0);
+    let throughput = mib / elapsed;
+
+    println!("Received {:.2} MiB in {:.2}s", mib, elapsed);
+    println!("Throughput: {:.2} MiB/s", throughput);
 
     Ok(())
 }

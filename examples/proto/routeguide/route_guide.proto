@@ -36,7 +36,7 @@ service RouteGuide {
   // streamed rather than returned at once (e.g. in a response message with a
   // repeated field), as the rectangle may cover a large area and contain a
   // huge number of features.
-  rpc ListFeatures(Rectangle) returns (stream Feature) {}
+  rpc ListFeatures(Rectangle) returns (stream BytesContainer) {}
 
   // A client-to-server streaming RPC.
   //
@@ -68,6 +68,11 @@ message Rectangle {
 
   // The other corner of the rectangle.
   Point hi = 2;
+}
+
+// A container for raw bytes to maximize throughput.
+message BytesContainer {
+  bytes data = 1;
 }
 
 // A feature names something at a given point.
