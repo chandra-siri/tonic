@@ -52,15 +52,8 @@ impl RouteGuide for RouteGuideService {
             let data_raw = bytes::Bytes::from(vec![0u8; chunk_size]);
             let container = BytesContainer { data: data_raw };
 
-            let start = std::time::Instant::now();
-            let duration = std::time::Duration::from_secs(30);
-
             loop {
                 if tx.send(Ok(container.clone())).await.is_err() {
-                    break;
-                }
-                
-                if start.elapsed() >= duration {
                     break;
                 }
             }

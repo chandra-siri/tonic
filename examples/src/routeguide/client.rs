@@ -31,23 +31,36 @@ async fn print_features(client: &mut RouteGuideClient<Channel>) -> Result<(), Bo
         .await?
         .into_inner();
 
-    let start = std::time::Instant::now();
     let mut received_bytes = 0u64;
-    let duration = Duration::from_secs(30);
+    let warmup_duration = Duration::from_secs(5);
+    let measure_duration = Duration::from_secs(30);
     let mut count = 0;
 
-    println!("Receiving data from server for around 30 seconds...");
+    println!("Starting 5s warmup phase...");
+    
+    let warmup_start = std::time::Instant::now();
+    let mut is_warmup = true;
+    let mut measure_start = std::time::Instant::now();
 
     while let Some(container) = stream.message().await? {
+        if is_warmup {
+            if warmup_start.elapsed() >= warmup_duration {
+                println!("Warmup complete. Measuring throughput for 30s...");
+                is_warmup = false;
+                measure_start = std::time::Instant::now();
+            }
+            continue;
+        }
+
         received_bytes += container.data.len() as u64;
         count += 1;
         
-        if start.elapsed() >= duration {
+        if measure_start.elapsed() >= measure_duration {
             break;
         }
     }
 
-    let elapsed = start.elapsed().as_secs_f64();
+    let elapsed = measure_start.elapsed().as_secs_f64();
     let mib = received_bytes as f64 / (1024.0 * 1024.0);
     let throughput = mib / elapsed;
 
