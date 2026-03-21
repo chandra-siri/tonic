@@ -48,23 +48,13 @@ impl RouteGuide for RouteGuideService {
         let _features = self.features.clone(); // Keep if we need it later, but not used
 
         tokio::spawn(async move {
-            let target_bytes = 10_u64 * 1024 * 1024 * 1024; // ~10 GiB
-            let mut sent_bytes = 0_u64;
-
             let chunk_size = 2 * 1024 * 1024; // 2 MiB
             let data_raw = vec![0u8; chunk_size];
             let container = BytesContainer { data: data_raw };
 
-            'outer: while sent_bytes < target_bytes {
-                let size = container.data.len() as u64;
-                
+            loop {
                 if tx.send(Ok(container.clone())).await.is_err() {
-                    break 'outer;
-                }
-                
-                sent_bytes += size;
-                if sent_bytes >= target_bytes {
-                    break 'outer;
+                    break;
                 }
             }
 
