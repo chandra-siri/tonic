@@ -2,6 +2,7 @@ use std::{env, path::PathBuf};
 
 fn main() {
     tonic_prost_build::configure()
+        .bytes(&["."])
         .compile_protos(&["proto/routeguide/route_guide.proto"], &["proto"])
         .unwrap();
 

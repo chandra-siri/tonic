@@ -49,7 +49,7 @@ impl RouteGuide for RouteGuideService {
 
         tokio::spawn(async move {
             let chunk_size = 2 * 1024 * 1024; // 2 MiB
-            let data_raw = vec![0u8; chunk_size];
+            let data_raw = bytes::Bytes::from(vec![0u8; chunk_size]);
             let container = BytesContainer { data: data_raw };
 
             let start = std::time::Instant::now();
