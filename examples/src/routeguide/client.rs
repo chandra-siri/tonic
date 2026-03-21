@@ -40,6 +40,7 @@ async fn print_features(client: &mut RouteGuideClient<Channel>) -> Result<(), Bo
 
     while let Some(container) = stream.message().await? {
         received_bytes += container.data.len() as u64;
+        count += 1;
         
         if start.elapsed() >= duration {
             break;
@@ -50,6 +51,7 @@ async fn print_features(client: &mut RouteGuideClient<Channel>) -> Result<(), Bo
     let mib = received_bytes as f64 / (1024.0 * 1024.0);
     let throughput = mib / elapsed;
 
+    println!("Total chunks received: {}", count);
     println!("Received {:.2} MiB in {:.2}s", mib, elapsed);
     println!("Throughput: {:.2} MiB/s", throughput);
 
