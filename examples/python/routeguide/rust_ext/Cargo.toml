@@ -1,0 +1,20 @@
+[package]
+name = "routeguide_rust_client"
+version = "0.1.0"
+edition = "2021"
+
+[workspace]
+
+[lib]
+name = "routeguide_rust_client"
+crate-type = ["cdylib"]
+
+[dependencies]
+pyo3 = { version = "0.20", features = ["extension-module"] }
+pyo3-asyncio = { version = "0.20", features = ["tokio-runtime"] }
+tokio = { version = "1", features = ["rt-multi-thread", "macros", "time"] }
+tonic = { path = "../../../.." }
+prost = "0.14"
+
+[build-dependencies]
+tonic-build = { path = "../../../../tonic-build" }
