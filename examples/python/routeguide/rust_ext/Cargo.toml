@@ -13,7 +13,7 @@ crate-type = ["cdylib"]
 pyo3 = { version = "0.20", features = ["extension-module"] }
 pyo3-asyncio = { version = "0.20", features = ["tokio-runtime"] }
 tokio = { version = "1", features = ["rt-multi-thread", "macros", "time"] }
-tonic = { path = "../../../.." }
+tonic = { path = "../../../../tonic" }
 prost = "0.14"
 
 [build-dependencies]
