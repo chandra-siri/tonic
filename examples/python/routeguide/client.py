@@ -3,13 +3,14 @@
 import asyncio
 import logging
 import time
+import statistics
 
 import grpc
 import route_guide_pb2
 import route_guide_pb2_grpc
 
 
-async def guide_list_features(stub: route_guide_pb2_grpc.RouteGuideStub) -> None:
+async def guide_list_features(stub: route_guide_pb2_grpc.RouteGuideStub) -> float:
     rectangle = route_guide_pb2.Rectangle(
         lo=route_guide_pb2.Point(latitude=400000000, longitude=-750000000),
         hi=route_guide_pb2.Point(latitude=420000000, longitude=-730000000),
@@ -52,6 +53,8 @@ async def guide_list_features(stub: route_guide_pb2_grpc.RouteGuideStub) -> None
     print(f"Received {mib:.2f} MiB in {elapsed:.2f}s")
     print(f"Throughput: {throughput:.2f} MiB/s")
 
+    return throughput
+
 
 async def main() -> None:
     # Target address for the server (from client.rs configuration)
@@ -59,10 +62,22 @@ async def main() -> None:
     
     print(f"Connecting to {target}...")
     
+    n = 5
+    throughputs = []
+
     async with grpc.aio.insecure_channel(target) as channel:
         stub = route_guide_pb2_grpc.RouteGuideStub(channel)
-        print("-------------- ListFeatures --------------")
-        await guide_list_features(stub)
+        print(f"-------------- ListFeatures (Running {n} times) --------------")
+        for i in range(n):
+            print(f"\n--- Run {i + 1}/{n} ---")
+            throughput = await guide_list_features(stub)
+            throughputs.append(throughput)
+
+    print("\n-------------- Benchmark Summary --------------")
+    print(f"Average Throughput: {statistics.mean(throughputs):.2f} MiB/s")
+    print(f"Median Throughput:  {statistics.median(throughputs):.2f} MiB/s")
+    print(f"Max Throughput:     {max(throughputs):.2f} MiB/s")
+    print(f"Min Throughput:     {min(throughputs):.2f} MiB/s")
 
 
 if __name__ == "__main__":
