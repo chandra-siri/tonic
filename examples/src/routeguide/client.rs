@@ -14,7 +14,7 @@ pub mod routeguide {
     tonic::include_proto!("routeguide");
 }
 
-async fn print_features(client: &mut RouteGuideClient<Channel>) -> Result<(), Box<dyn Error>> {
+async fn print_features(client: &mut RouteGuideClient<Channel>) -> Result<f64, Box<dyn Error>> {
     let rectangle = Rectangle {
         lo: Some(Point {
             latitude: 400_000_000,
@@ -68,7 +68,7 @@ async fn print_features(client: &mut RouteGuideClient<Channel>) -> Result<(), Bo
     println!("Received {:.2} MiB in {:.2}s", mib, elapsed);
     println!("Throughput: {:.2} MiB/s", throughput);
 
-    Ok(())
+    Ok(throughput)
 }
 
 async fn run_record_route(client: &mut RouteGuideClient<Channel>) -> Result<(), Box<dyn Error>> {
@@ -136,7 +136,31 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     println!("RESPONSE = {response:?}");
 
     println!("\n*** SERVER STREAMING ***");
-    print_features(&mut client).await?;
+    let mut throughputs = vec![];
+    for i in 0..5 {
+        println!("\nRun #{}", i + 1);
+        let throughput = print_features(&mut client).await?;
+        throughputs.push(throughput);
+    }
+
+    throughputs.sort_by(|a, b| a.partial_cmp(b).unwrap());
+
+    let sum: f64 = throughputs.iter().sum();
+    let mean = sum / throughputs.len() as f64;
+    let median = if throughputs.len() % 2 == 0 {
+        (throughputs[throughputs.len() / 2 - 1] + throughputs[throughputs.len() / 2]) / 2.0
+    } else {
+        throughputs[throughputs.len() / 2]
+    };
+    let min = throughputs.first().unwrap();
+    let max = throughputs.last().unwrap();
+
+    println!("\n*** Server-Side Streaming Results ***");
+    println!("Throughputs (MiB/s): {:?}", throughputs);
+    println!("Mean: {:.2} MiB/s", mean);
+    println!("Median: {:.2} MiB/s", median);
+    println!("Min: {:.2} MiB/s", min);
+    println!("Max: {:.2} MiB/s", max);
 
     println!("\n*** CLIENT STREAMING ***");
     run_record_route(&mut client).await?;
